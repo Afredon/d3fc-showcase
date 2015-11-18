@@ -129,7 +129,6 @@
         var layoutWidth;
 
         function nav(selection) {
-            console.log('--nav--');
             var navbarContainer = selection.select('#navbar-container');
             var navbarReset = selection.select('#navbar-reset');
             var model = navbarContainer.datum();
