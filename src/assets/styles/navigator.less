@@ -4,9 +4,8 @@
     margin-right: 0 !important;
 
     .extent {
-      fill: @navigator-extent-colour;
+      fill: none;
       stroke: @navigator-selection-border-colour;
-      fill-opacity: 0.125;
       shape-rendering: crispEdges;
     }
 
@@ -20,6 +19,12 @@
       .multi {
         .area {
           fill: @gridline-colour;
+          &.highlight {
+              fill: url('/#gradient-highlight');
+          }
+          &.unselected {
+              fill: url('/#gradient-unselected');
+          }
         }
         path {
           stroke: @navigator-colour;
@@ -31,6 +36,19 @@
     text {
       font-size: @font-size-base;
       fill: @font-colour;
+    }
+
+    #gradient-highlight-top {
+        stop-color: @secondary-orange;
+    }
+    #gradient-highlight-bottom {
+        stop-color: lighten(@secondary-orange, 30%);
+    }
+    #gradient-unselected-top {
+        stop-color: @secondary-grey;
+    }
+    #gradient-unselected-bottom {
+        stop-color: lighten(@secondary-grey, 30%);
     }
   }
 
