@@ -29,22 +29,61 @@
             .yValue(function(d) { return d.close; });
         var brush = d3.svg.brush();
 
-        var filterLeft = function(data, leftHighlightedDate) {
-            return data.filter(function(x) {return x.date <= leftHighlightedDate; });
+        var linearInterpolation = function(fromValue, fromA, fromB, toA, toB) {
+            return toA + (toB - toA) * (fromValue - fromA) / (fromB - fromA);
         };
-        var filterRight = function(data, rightHighlightedDate) {
-            return data.filter(function(x) {return x.date >= rightHighlightedDate; });
+
+        var filterLeft = function(data, highlightedData) {
+            // filter
+            var dataOnLeft = data.filter(function(x) {return x.date <= viewScale.domain()[0]; });
+
+            // augment with intersection of data with brush border by interpolating
+            if (dataOnLeft[dataOnLeft.length - 1].date < viewScale.domain()[0]) {
+                var interpolatedClose = linearInterpolation(
+                    viewScale.domain()[0],
+                    dataOnLeft[dataOnLeft.length - 1].date,
+                    highlightedData[0].date,
+                    dataOnLeft[dataOnLeft.length - 1].close,
+                    highlightedData[0].close);
+                var interpolatedData = {date: viewScale.domain()[0], close: interpolatedClose};
+                dataOnLeft.push(interpolatedData);
+                highlightedData.unshift(interpolatedData);
+            }
+            return dataOnLeft;
         };
+
+        var filterRight = function(data, highlightedData) {
+            var dataOnRight = data.filter(function(x) {return x.date >= viewScale.domain()[1]; });
+
+            if (dataOnRight[0].date > viewScale.domain()[1]) {
+                var interpolatedClose = linearInterpolation(
+                    viewScale.domain()[1],
+                    highlightedData[highlightedData.length - 1].date,
+                    dataOnRight[0].date,
+                    highlightedData[highlightedData.length - 1].close,
+                    dataOnRight[0].close);
+                var interpolatedData = {date: viewScale.domain()[1], close: interpolatedClose};
+                dataOnRight.unshift(interpolatedData);
+                highlightedData.push(interpolatedData);
+            }
+            return dataOnRight;
+        };
+
         var filterHighlight = function(data) {
-            return data.filter(function(x) {
+            var filteredData = data.filter(function(x) {
                 return x.date >= viewScale.domain()[0] &&
                     x.date <= viewScale.domain()[1];
             });
+
+            return filteredData;
         };
 
         var navMulti = fc.series.multi().series([areaLeft, areaHighlight, areaRight, line, brush])
             .mapping(function(series) {
-                var hightlightedData = filterHighlight(this.data);
+                var highlightedData = filterHighlight(this.data);
+                var leftData = filterLeft(this.data, highlightedData);
+                var rightData = filterRight(this.data, highlightedData);
+
                 switch (series) {
                     case brush: {
                         brush.extent([
@@ -54,11 +93,11 @@
                         return this.data;
                     }
                     case areaLeft:
-                        return filterLeft(this.data, hightlightedData[0].date);
+                        return leftData;
                     case areaHighlight:
-                        return filterHighlight(this.data);
+                        return highlightedData;
                     case areaRight:
-                        return filterRight(this.data, hightlightedData[hightlightedData.length - 1].date);
+                        return rightData;
 
                     default: return this.data;
                 }
