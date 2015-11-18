@@ -6,7 +6,7 @@
     .extent {
       fill: @navigator-extent-colour;
       stroke: @navigator-selection-border-colour;
-      fill-opacity: 0.125;
+      fill-opacity: 0;
       shape-rendering: crispEdges;
     }
 
@@ -20,6 +20,9 @@
       .multi {
         .area {
           fill: @gridline-colour;
+          &.highlighted {
+              fill: url(#Gradient1);
+          }
         }
         path {
           stroke: @navigator-colour;

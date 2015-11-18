@@ -33,7 +33,14 @@
                     <svg id="x-axis-container"></svg>
                 </div>
                 <div id="navbar-row">
-                    <svg id="navbar-container"></svg>
+                    <svg id="navbar-container">
+                        <defs>
+                            <linearGradient id="Gradient1" x1="0%" x2="0%" y1="0%" y2="100%">
+                              <stop offset="0%" stop-color="#FF7F00" color-opacity=1></stop>
+                              <stop offset="15%" stop-color="white"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
                     <svg id="navbar-reset"></svg>
                 </div>
             </div>

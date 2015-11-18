@@ -14,21 +14,56 @@
 
         var viewScale = fc.scale.dateTime();
 
-        var area = fc.series.area()
+        var areaLeft = fc.series.area()
             .yValue(function(d) { return d.close; });
+        var areaRight = fc.series.area()
+            .yValue(function(d) { return d.close; });
+        var areaHighlight = fc.series.area()
+            .yValue(function(d) { return d.close; })
+            .decorate(function(selection) {
+                selection.enter()
+                .classed('highlighted', true);
+            });
+
         var line = fc.series.line()
             .yValue(function(d) { return d.close; });
         var brush = d3.svg.brush();
-        var navMulti = fc.series.multi().series([area, line, brush])
-            .mapping(function(series) {
-                if (series === brush) {
-                    brush.extent([
-                        [viewScale.domain()[0], navChart.yDomain()[0]],
-                        [viewScale.domain()[1], navChart.yDomain()[1]]
-                    ]);
-                }
-                return this.data;
+
+        var filterLeft = function(data, leftHighlightedDate) {
+            return data.filter(function(x) {return x.date <= leftHighlightedDate; });
+        };
+        var filterRight = function(data, rightHighlightedDate) {
+            return data.filter(function(x) {return x.date >= rightHighlightedDate; });
+        };
+        var filterHighlight = function(data) {
+            return data.filter(function(x) {
+                return x.date >= viewScale.domain()[0] &&
+                    x.date <= viewScale.domain()[1];
             });
+        };
+
+        var navMulti = fc.series.multi().series([areaLeft, areaHighlight, areaRight, line, brush])
+            .mapping(function(series) {
+                var hightlightedData = filterHighlight(this.data);
+                switch (series) {
+                    case brush: {
+                        brush.extent([
+                            [viewScale.domain()[0], navChart.yDomain()[0]],
+                            [viewScale.domain()[1], navChart.yDomain()[1]]
+                        ]);
+                        return this.data;
+                    }
+                    case areaLeft:
+                        return filterLeft(this.data, hightlightedData[0].date);
+                    case areaHighlight:
+                        return filterHighlight(this.data);
+                    case areaRight:
+                        return filterRight(this.data, hightlightedData[hightlightedData.length - 1].date);
+
+                    default: return this.data;
+                }
+            });
+
         var layoutWidth;
 
         function nav(selection) {
@@ -59,11 +94,7 @@
             navChart.xDomain(fc.util.extent().fields('date')(model.data))
                 .yDomain(yExtent);
 
-            brush.on('brush', function() {
-                if (brush.extent()[0][0] - brush.extent()[1][0] !== 0) {
-                    dispatch[sc.event.viewChange]([brush.extent()[0][0], brush.extent()[1][0]]);
-                }
-            })
+            brush.on('brush', brushed)
             .on('brushend', function() {
                 if (brush.extent()[0][0] - brush.extent()[1][0] === 0) {
                     dispatch[sc.event.viewChange](sc.util.domain.centerOnDate(viewScale.domain(),
@@ -83,7 +114,32 @@
                     dispatch[sc.event.viewChange](domain);
                 });
 
-            navbarContainer.select('.plot-area').call(zoom);
+            selection.select('.plot-area')
+                .call(zoom);
+        }
+
+        function brushed() {
+            var extent0 = brush.extent(),
+                extent1;
+
+            // if dragging, preserve the width of the extednt
+            if (d3.event.mode === 'move') {
+                // var d0 = d3.time.day.round(extent0[0]),
+                //     d1 = d3.time.day.offset(d0, Math.round((extent0[1] - extent0[0]) / 864e5));
+                // extent1 = [d0, d1];
+                extent1 = extent0;
+            }
+            // otherwise, if resizing, round both dates
+            else {
+                extent0[0][0] = d3.time.day.floor(extent0[0][0]);
+                extent0[1][0] = d3.time.day.ceil(extent0[1][0]);
+                extent1 = extent0;
+            }
+            d3.select(this).call(brush.extent(extent1));
+
+            if (brush.extent()[0][0] - brush.extent()[1][0] !== 0) {
+                dispatch[sc.event.viewChange]([brush.extent()[0][0], brush.extent()[1][0]]);
+            }
         }
 
         d3.rebind(nav, dispatch, 'on');
