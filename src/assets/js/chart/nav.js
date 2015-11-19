@@ -57,6 +57,7 @@
         };
 
         var findIntervalIndexes = function(data, leftSelectedDate, rightSelectedDate) {
+            // returns the indexes of the widest interval in data than is included in [left;right]
             var leftHighlightIndex = -1;
             var rightHighlightIndex = -1;
             var iIndex = 0;
