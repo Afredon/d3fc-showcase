@@ -103,7 +103,7 @@
                 }
             }
 
-            // augment left and highlightData with interpolated point
+            // augment right and highlightData with interpolated point
             if (rightData.length > 0) {
                 interpolatedClose = linearInterpolation(
                     rightSelectedDate,
