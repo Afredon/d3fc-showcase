@@ -24,30 +24,29 @@
                 path.attr('d', augmented);
             }
         };
+
+        var decorateArea = function(className) {
+            return function(path) {
+                path.enter()
+                .classed(className, true);
+                forcePathTop(path);
+            };
+        };
+
         var areaLeft = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(function(path) {
-                path.enter()
-                .classed('unselected', true);
-                forcePathTop(path);
-            });
+            .decorate(decorateArea('unselected'));
+
         var areaRight = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(function(path) {
-                path.enter()
-                .classed('unselected', true);
-                forcePathTop(path);
-            });
+            .decorate(decorateArea('unselected'));
+
         var areaHighlight = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(function(path) {
-                path.enter()
-                .classed('highlighted', true);
-                forcePathTop(path);
-            });
+            .decorate(decorateArea('highlighted'));
 
         var line = fc.series.line()
             .yValue(function(d) { return d.close; });
