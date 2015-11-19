@@ -6,7 +6,8 @@
             sc.event.viewChange,
             sc.event.resetToLatest);
 
-        var navChart = fc.chart.cartesian(fc.scale.dateTime(), d3.scale.linear())
+        var yScale = d3.scale.linear();
+        var navChart = fc.chart.cartesian(fc.scale.dateTime(), yScale)
             .yTicks(0)
             .margin({
                 bottom: 40
@@ -14,15 +15,38 @@
 
         var viewScale = fc.scale.dateTime();
 
+        var forcePathTop = function(path) {
+            // ensure the top of the path is always the one of the container
+            // to keep the gradient consistent when the user changes the selected period.
+            var current = path.attr('d');
+            if (current) {
+                var augmented = 'M0,0' + current;
+                path.attr('d', augmented);
+            }
+        };
         var areaLeft = fc.series.area()
-            .yValue(function(d) { return d.close; });
+            .yValue(function(d) { return d.close; })
+            .yScale(yScale)
+            .decorate(function(path) {
+                path.enter()
+                .classed('unselected', true);
+                forcePathTop(path);
+            });
         var areaRight = fc.series.area()
-            .yValue(function(d) { return d.close; });
+            .yValue(function(d) { return d.close; })
+            .yScale(yScale)
+            .decorate(function(path) {
+                path.enter()
+                .classed('unselected', true);
+                forcePathTop(path);
+            });
         var areaHighlight = fc.series.area()
             .yValue(function(d) { return d.close; })
-            .decorate(function(selection) {
-                selection.enter()
+            .yScale(yScale)
+            .decorate(function(path) {
+                path.enter()
                 .classed('highlighted', true);
+                forcePathTop(path);
             });
 
         var line = fc.series.line()
@@ -35,6 +59,7 @@
 
         var splitData = function(data, output) {
             var leftData, highlightData, rightData;
+            // search indexes bounding the highlighted area
             var leftHighlightDataIndex = -1;
             var rightHighlightDataIndex = -1;
             var iIndex = 0;
@@ -56,6 +81,7 @@
             if (iIndex === data.length && rightHighlightDataIndex === -1) {
                 rightHighlightDataIndex = data.length - 1;
             }
+            // slice into the 3 parts
             leftData = data.slice(0, leftHighlightDataIndex);
             highlightData = data.slice(leftHighlightDataIndex, rightHighlightDataIndex + 1);
             rightData = data.slice(rightHighlightDataIndex + 1);
@@ -91,6 +117,7 @@
                     highlightData.push(interpolatedData);
                 }
             }
+
             output.leftData = leftData;
             output.rightData = rightData;
             output.highlightData = highlightData;
@@ -126,7 +153,8 @@
                 }
             });
 
-        var layoutWidth;
+        var layoutWidth,
+            layoutHeight;
 
         function nav(selection) {
             var navbarContainer = selection.select('#navbar-container');
@@ -153,6 +181,11 @@
                 model.data);
             var yExtent = fc.util.extent()
                 .fields(['low', 'high'])(filteredData);
+
+            yScale.domain(yExtent);
+            areaLeft.y0Value(yScale.domain()[0]);
+            areaHighlight.y0Value(yScale.domain()[0]);
+            areaRight.y0Value(yScale.domain()[0]);
 
             navChart.xDomain(fc.util.extent().fields('date')(model.data))
                 .yDomain(yExtent);
@@ -190,6 +223,8 @@
         nav.dimensionChanged = function(container) {
             layoutWidth = parseInt(container.style('width'));
             viewScale.range([0, layoutWidth]);
+            layoutHeight = parseInt(container.style('height'));
+            yScale.range([layoutHeight, 0]);
         };
 
         return nav;

@@ -21,7 +21,10 @@
         .area {
           fill: @gridline-colour;
           &.highlighted {
-              fill: url(#Gradient1);
+              fill: url(#GradientHighlight);
+          }
+          &.unselected {
+              fill: url(#GradientUnselected);
           }
         }
         path {
@@ -34,6 +37,19 @@
     text {
       font-size: @font-size-base;
       fill: @font-colour;
+    }
+
+    #stopHighlightTop {
+        stop-color: @secondary-orange;
+    }
+    #stopHighlightBottom {
+        stop-color: lighten(@secondary-orange, 30%);
+    }
+    #stopUnselectedTop {
+        stop-color: @secondary-grey;
+    }
+    #stopUnselectedBottom {
+        stop-color: lighten(@secondary-grey, 30%);
     }
   }
 
