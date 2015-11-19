@@ -56,79 +56,76 @@
             return toA + (toB - toA) * (fromValue - fromA) / (fromB - fromA);
         };
 
-        var splitData = function(data, output) {
-            var leftData, highlightData, rightData;
-            // search indexes bounding the highlighted area
-            var leftHighlightDataIndex = -1;
-            var rightHighlightDataIndex = -1;
+        var findIntervalIndexes = function(data, leftSelectedDate, rightSelectedDate) {
+            var leftHighlightIndex = -1;
+            var rightHighlightIndex = -1;
             var iIndex = 0;
-            var leftSelectedDate =  viewScale.domain()[0];
-            var rightSelectedDate = viewScale.domain()[1];
-            while (iIndex < data.length && leftHighlightDataIndex === -1) {
+            while (iIndex < data.length && leftHighlightIndex === -1) {
                 if (data[iIndex].date >= leftSelectedDate) {
-                    leftHighlightDataIndex = iIndex;
+                    leftHighlightIndex = iIndex;
                 }
                 iIndex++;
             }
-            while (iIndex < data.length && rightHighlightDataIndex === -1) {
+            while (iIndex < data.length && rightHighlightIndex === -1) {
                 if (data[iIndex].date > rightSelectedDate) {
-                    rightHighlightDataIndex = iIndex - 1;
+                    rightHighlightIndex = iIndex - 1;
                 } else {
                     iIndex++;
                 }
             }
-            if (iIndex === data.length && rightHighlightDataIndex === -1) {
-                rightHighlightDataIndex = data.length - 1;
+            if (iIndex === data.length && rightHighlightIndex === -1) {
+                rightHighlightIndex = data.length - 1;
             }
-            // slice into the 3 parts
-            leftData = data.slice(0, leftHighlightDataIndex);
-            highlightData = data.slice(leftHighlightDataIndex, rightHighlightDataIndex + 1);
-            rightData = data.slice(rightHighlightDataIndex + 1);
 
+            return {left: leftHighlightIndex, right: rightHighlightIndex};
+        };
+
+        var addInterpolatedPoint = function(value, left, right) {
+            // Value: where interpolation is needed
+            // Left, Right: arrays around the point where the interpolation is needed
+            // [left] value [right] => [Left; data(value)] [data(value); Right]
             var interpolatedClose;
             var interpolatedData;
-            // augment left and highlightData with interpolated point
-            if (leftData.length > 0) {
-                interpolatedClose = linearInterpolation(
-                    leftSelectedDate,
-                    leftData[leftData.length - 1].date,
-                    highlightData[0].date,
-                    leftData[leftData.length - 1].close,
-                    highlightData[0].close);
-                interpolatedData = {date: leftSelectedDate, close: interpolatedClose};
-                leftData.push(interpolatedData);
-                if (leftSelectedDate !== highlightData[0].date) {
-                    highlightData.unshift(interpolatedData);
-                }
-            }
 
-            // augment right and highlightData with interpolated point
-            if (rightData.length > 0) {
+            if (left.length > 0 && right.length > 0) {
                 interpolatedClose = linearInterpolation(
-                    rightSelectedDate,
-                    highlightData[highlightData.length - 1].date,
-                    rightData[0].date,
-                    highlightData[highlightData.length - 1].close,
-                    rightData[0].close);
-                interpolatedData = {date: rightSelectedDate, close: interpolatedClose};
-                rightData.unshift(interpolatedData);
-                if (rightSelectedDate !== highlightData[highlightData.length - 1].date) {
-                    highlightData.push(interpolatedData);
-                }
+                    value,
+                    left[left.length - 1].date,
+                    right[0].date,
+                    left[left.length - 1].close,
+                    right[0].close);
+                interpolatedData = {date: value, close: interpolatedClose};
+                left.push(interpolatedData);
+                right.unshift(interpolatedData);
             }
+        };
+
+        var splitData = function(data, output) {
+            var leftSelectedDate =  viewScale.domain()[0];
+            var rightSelectedDate = viewScale.domain()[1];
+
+            var highlightIndexes = findIntervalIndexes(data, leftSelectedDate, rightSelectedDate);
+
+            var leftData, highlightData, rightData;
+            leftData = data.slice(0, highlightIndexes.left);
+            highlightData = data.slice(highlightIndexes.left, highlightIndexes.right + 1);
+            rightData = data.slice(highlightIndexes.right + 1);
+
+            addInterpolatedPoint(leftSelectedDate, leftData, highlightData);
+            addInterpolatedPoint(rightSelectedDate, highlightData, rightData);
 
             output.leftData = leftData;
             output.rightData = rightData;
             output.highlightData = highlightData;
         };
 
-        var data = {};
+        var areaData = {};
         var refreshAreas = function(modelData) {
             var dataFromSplit = {};
             splitData(modelData, dataFromSplit);
-            data.left = dataFromSplit.leftData;
-            data.right = dataFromSplit.rightData;
-            data.highlighted = dataFromSplit.highlightData;
+            areaData.left = dataFromSplit.leftData;
+            areaData.right = dataFromSplit.rightData;
+            areaData.highlight = dataFromSplit.highlightData;
         };
 
         var navMulti = fc.series.multi().series([areaLeft, areaHighlight, areaRight, line, brush])
@@ -142,11 +139,11 @@
                         return this.data;
                     }
                     case areaLeft:
-                        return data.left;
+                        return areaData.left;
                     case areaHighlight:
-                        return data.highlighted;
+                        return areaData.highlight;
                     case areaRight:
-                        return data.right;
+                        return areaData.right;
 
                     default: return this.data;
                 }
