@@ -56,28 +56,34 @@
             return toA + (toB - toA) * (fromValue - fromA) / (fromB - fromA);
         };
 
+        var binarySearch = function(data, value, getLeftValue) {
+            // Variation on classic binary search with deferred equality
+            // we are not looking for the exact value but the closest value left or right
+            var iMin = 0;
+            var iMax = data.length - 1;
+            var iMid;
+            while (iMin + 1 < iMax) {
+                iMid = Math.floor((iMin + iMax) / 2);
+                if (data[iMid].date < value) {
+                    iMin = iMid;
+                } else {
+                    iMax = iMid;
+                }
+            }
+            // deferred equality
+            if (data[iMin].date === value) {
+                return iMin;
+            }
+            if (data[iMax].date === value) {
+                return iMax;
+            }
+            return getLeftValue ? iMin : iMax;
+        };
+
         var findIntervalIndexes = function(data, leftSelectedDate, rightSelectedDate) {
             // returns the indexes of the widest interval in data than is included in [left;right]
-            var leftHighlightIndex = -1;
-            var rightHighlightIndex = -1;
-            var iIndex = 0;
-            while (iIndex < data.length && leftHighlightIndex === -1) {
-                if (data[iIndex].date >= leftSelectedDate) {
-                    leftHighlightIndex = iIndex;
-                }
-                iIndex++;
-            }
-            while (iIndex < data.length && rightHighlightIndex === -1) {
-                if (data[iIndex].date > rightSelectedDate) {
-                    rightHighlightIndex = iIndex - 1;
-                } else {
-                    iIndex++;
-                }
-            }
-            if (iIndex === data.length && rightHighlightIndex === -1) {
-                rightHighlightIndex = data.length - 1;
-            }
-
+            var leftHighlightIndex = binarySearch(data, leftSelectedDate, false);
+            var rightHighlightIndex = binarySearch(data, rightSelectedDate, true);
             return {left: leftHighlightIndex, right: rightHighlightIndex};
         };
 
