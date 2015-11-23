@@ -14,6 +14,7 @@
             });
 
         var viewScale = fc.scale.dateTime();
+        var areaData = {};
 
         var forcePathTop = function(path) {
             // ensure the top of the path is always the one of the container
@@ -71,68 +72,70 @@
                 }
             }
             // deferred equality
-            if (data[iMin].date === value) {
-                return iMin;
-            }
-            if (data[iMax].date === value) {
-                return iMax;
-            }
             return getLeftValue ? iMin : iMax;
         };
 
-        var findIntervalIndexes = function(data, leftSelectedDate, rightSelectedDate) {
+        var findIntervalIndexes = function(data, selectedDates) {
             // returns the indexes of the widest interval in data than is included in [left;right]
-            var leftHighlightIndex = binarySearch(data, leftSelectedDate, false);
-            var rightHighlightIndex = binarySearch(data, rightSelectedDate, true);
+            var leftHighlightIndex = binarySearch(data, selectedDates.left, false);
+            var rightHighlightIndex = binarySearch(data, selectedDates.right, true);
             return {left: leftHighlightIndex, right: rightHighlightIndex};
         };
 
-        var addInterpolatedPoint = function(value, left, right) {
+        var calcInterpolationPoint = function(date, left, right) {
+            var interpolatedClose = linearInterpolation(
+                date,
+                left[left.length - 1].date,
+                right[0].date,
+                left[left.length - 1].close,
+                right[0].close);
+            return {date: date, close: interpolatedClose};
+        };
+
+        var addInterpolatedPoint = function(date, left, right) {
             // Value: where interpolation is needed
             // Left, Right: arrays around the point where the interpolation is needed
-            // [left] value [right] => [Left; data(value)] [data(value); Right]
-            var interpolatedClose;
-            var interpolatedData;
-
+            // [left] date [right] => [Left; data(date)] [data(date); Right]
             if (left.length > 0 && right.length > 0) {
-                interpolatedClose = linearInterpolation(
-                    value,
-                    left[left.length - 1].date,
-                    right[0].date,
-                    left[left.length - 1].close,
-                    right[0].close);
-                interpolatedData = {date: value, close: interpolatedClose};
+                var interpolatedData = calcInterpolationPoint(date, left, right);
                 left.push(interpolatedData);
                 right.unshift(interpolatedData);
             }
         };
 
-        var splitData = function(data, output) {
-            var leftSelectedDate =  viewScale.domain()[0];
-            var rightSelectedDate = viewScale.domain()[1];
-
-            var highlightIndexes = findIntervalIndexes(data, leftSelectedDate, rightSelectedDate);
-
-            var leftData, highlightData, rightData;
-            leftData = data.slice(0, highlightIndexes.left);
-            highlightData = data.slice(highlightIndexes.left, highlightIndexes.right + 1);
-            rightData = data.slice(highlightIndexes.right + 1);
-
-            addInterpolatedPoint(leftSelectedDate, leftData, highlightData);
-            addInterpolatedPoint(rightSelectedDate, highlightData, rightData);
-
-            output.leftData = leftData;
-            output.rightData = rightData;
-            output.highlightData = highlightData;
+        var addInterpolatedPointsToEmptyMiddleSet = function(selectedDates, areaData) {
+            var interpolatedData = calcInterpolationPoint(selectedDates.left, areaData.left, areaData.right);
+            areaData.left.push(interpolatedData);
+            areaData.highlight.unshift(interpolatedData);
+            interpolatedData = calcInterpolationPoint(selectedDates.right, areaData.left, areaData.right);
+            areaData.highlight.push(interpolatedData);
+            areaData.right.unshift(interpolatedData);
         };
 
-        var areaData = {};
-        var refreshAreas = function(modelData) {
-            var dataFromSplit = {};
-            splitData(modelData, dataFromSplit);
-            areaData.left = dataFromSplit.leftData;
-            areaData.right = dataFromSplit.rightData;
-            areaData.highlight = dataFromSplit.highlightData;
+        var addInterpolatedPoints = function(selectedDates, areaData) {
+            if (areaData.highlight.length > 0) {
+                addInterpolatedPoint(selectedDates.left, areaData.left, areaData.highlight);
+                addInterpolatedPoint(selectedDates.right, areaData.highlight, areaData.right);
+            } else {
+                addInterpolatedPointsToEmptyMiddleSet(selectedDates, areaData);
+            }
+        };
+
+        var splitData = function(data) {
+            var output = {};
+            var selectedDates = {};
+            selectedDates.left =  viewScale.domain()[0];
+            selectedDates.right = viewScale.domain()[1];
+
+            var highlightIndexes = findIntervalIndexes(data, selectedDates);
+
+            output.left = data.slice(0, highlightIndexes.left);
+            output.highlight = data.slice(highlightIndexes.left, highlightIndexes.right + 1);
+            output.right = data.slice(highlightIndexes.right + 1);
+
+            addInterpolatedPoints(selectedDates, output);
+
+            return output;
         };
 
         var navMulti = fc.series.multi().series([areaLeft, areaHighlight, areaRight, line, brush])
@@ -165,7 +168,7 @@
             var model = navbarContainer.datum();
 
             viewScale.domain(model.viewDomain);
-            refreshAreas(model.data);
+            areaData = splitData(model.data);
 
             var resetButton = navbarReset.selectAll('g')
                 .data([model]);
