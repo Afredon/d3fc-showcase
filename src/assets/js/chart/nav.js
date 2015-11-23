@@ -20,7 +20,7 @@
             // to keep the gradient consistent when the user changes the selected period.
             var current = path.attr('d');
             if (current) {
-                var augmented = 'M0,0' + current;
+                var augmented = 'M-1,0H1' + current;
                 path.attr('d', augmented);
             }
         };
