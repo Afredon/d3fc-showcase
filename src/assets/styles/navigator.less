@@ -19,6 +19,12 @@
       .multi {
         .area {
           fill: @gridline-colour;
+          &.highlight {
+              fill: url('/#gradient-highlight');
+          }
+          &.unselected {
+              fill: url('/#gradient-unselected');
+          }
         }
         path {
           stroke: @navigator-colour;

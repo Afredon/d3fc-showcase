@@ -28,8 +28,7 @@
         var decorateArea = function(className) {
             return function(path) {
                 path.enter()
-                .classed(className, true)
-                .style('fill', 'url(#gradient-' + className + ')');
+                .classed(className, true);
                 forcePathTop(path);
             };
         };
