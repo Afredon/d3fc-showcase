@@ -28,7 +28,8 @@
         var decorateArea = function(className) {
             return function(path) {
                 path.enter()
-                .classed(className, true);
+                .classed(className, true)
+                .style('fill', 'url(#gradient-' + className + ')');
                 forcePathTop(path);
             };
         };
@@ -46,7 +47,7 @@
         var areaHighlight = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(decorateArea('highlighted'));
+            .decorate(decorateArea('highlight'));
 
         var line = fc.series.line()
             .yValue(function(d) { return d.close; });
