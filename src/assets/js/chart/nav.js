@@ -18,32 +18,28 @@
         var unselectedAreaName = 'unselected';
         var hightlightAreaName = 'highlight';
 
-        function gradientName(areaName) {
-            return 'gradient-' + areaName;
-        }
-
         function appendGradient(selection, areaName) {
-            var name = gradientName(areaName);
+            var gradientName = 'gradient-' + areaName;
             selection.selectAll('defs')
                 .data([0])
                 .enter()
                 .append('defs');
             var defs = selection.select('defs');
             var gradient = defs
-                .selectAll('#' + name)
+                .selectAll('#' + gradientName)
                 .data([0])
                 .enter()
                 .append('linearGradient')
-                .attr('id', name)
+                .attr('id', gradientName)
                 .attr('x1', '0%')
                 .attr('y1', '0%')
                 .attr('x2', '0%')
                 .attr('y2', '100%');
             gradient.append('stop')
-                .attr('id', name + '-top')
+                .attr('id', gradientName + '-top')
                 .attr('offset', '0%');
             gradient.append('stop')
-                .attr('id', name + '-bottom')
+                .attr('id', gradientName + '-bottom')
                 .attr('offset', '100%');
         }
 
