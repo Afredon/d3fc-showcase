@@ -15,6 +15,37 @@
 
         var viewScale = fc.scale.dateTime();
         var areaData = {};
+        var unselectedAreaName = 'unselected';
+        var hightlightAreaName = 'highlight';
+
+        function gradientName(areaName) {
+            return 'gradient-' + areaName;
+        }
+
+        function appendGradient(selection, areaName) {
+            var name = gradientName(areaName);
+            selection.selectAll('defs')
+                .data([0])
+                .enter()
+                .append('defs');
+            var defs = selection.select('defs');
+            var gradient = defs
+                .selectAll('#' + name)
+                .data([0])
+                .enter()
+                .append('linearGradient')
+                .attr('id', name)
+                .attr('x1', '0%')
+                .attr('y1', '0%')
+                .attr('x2', '0%')
+                .attr('y2', '100%');
+            gradient.append('stop')
+                .attr('id', name + '-top')
+                .attr('offset', '0%');
+            gradient.append('stop')
+                .attr('id', name + '-bottom')
+                .attr('offset', '100%');
+        }
 
         var forcePathTop = function(path) {
             // ensure the top of the path is always the one of the container
@@ -29,7 +60,7 @@
         var decorateArea = function(className) {
             return function(path) {
                 path.enter()
-                .classed(className, true);
+                    .classed(className, true);
                 forcePathTop(path);
             };
         };
@@ -37,17 +68,17 @@
         var areaLeft = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(decorateArea('unselected'));
+            .decorate(decorateArea(unselectedAreaName));
 
         var areaRight = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(decorateArea('unselected'));
+            .decorate(decorateArea(unselectedAreaName));
 
         var areaHighlight = fc.series.area()
             .yValue(function(d) { return d.close; })
             .yScale(yScale)
-            .decorate(decorateArea('highlight'));
+            .decorate(decorateArea(hightlightAreaName));
 
         var line = fc.series.line()
             .yValue(function(d) { return d.close; });
@@ -164,6 +195,8 @@
 
         function nav(selection) {
             var navbarContainer = selection.select('#navbar-container');
+            appendGradient(navbarContainer, unselectedAreaName);
+            appendGradient(navbarContainer, hightlightAreaName);
             var navbarReset = selection.select('#navbar-reset');
             var model = navbarContainer.datum();
 

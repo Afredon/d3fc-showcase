@@ -33,18 +33,7 @@
                     <svg id="x-axis-container"></svg>
                 </div>
                 <div id="navbar-row">
-                    <svg id="navbar-container">
-                        <defs>
-                            <linearGradient id="gradient-highlight" x1="0%" x2="0%" y1="0%" y2="100%">
-                              <stop id="stopHighlightTop" offset="0%"></stop>
-                              <stop id="stopHighlightBottom"  offset="100%"></stop>
-                            </linearGradient>
-                            <linearGradient id="gradient-unselected" x1="0%" x2="0%" y1="0%" y2="100%">
-                              <stop id="stopUnselectedTop" offset="0%"></stop>
-                              <stop id="stopUnselectedBottom"  offset="100%"></stop>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                    <svg id="navbar-container"></svg>
                     <svg id="navbar-reset"></svg>
                 </div>
             </div>
