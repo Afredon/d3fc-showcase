@@ -14,13 +14,57 @@
 
         var viewScale = fc.scale.dateTime();
 
+        function gradientName(areaName) {
+            return 'gradient-' + areaName;
+        }
+
+        function appendGradient(selection, areaName) {
+            var name = gradientName(areaName);
+            var newDefs = selection.selectAll('defs')
+                .data([0])
+                .enter()
+                .append('defs');
+            if (newDefs.length > 0) {
+                var gradient = newDefs
+                    .append('svg:linearGradient')
+                    .attr('id', name)
+                    .attr('x1', '0%')
+                    .attr('y1', '0%')
+                    .attr('x2', '0%')
+                    .attr('y2', '100%');
+                gradient.append('stop')
+                    .attr('id', name + '-top')
+                    .attr('stop-color', 'red')
+                    .attr('offset', '0%');
+                gradient.append('stop')
+                    .attr('id', name + '-bottom')
+                    .attr('stop-color', 'blue')
+                    .attr('offset', '20%');
+            }
+        }
+
+        var unselectedAreaName = 'unselected';
+        var hightlightAreaName = 'highlight';
         var area = fc.series.area()
-            .yValue(function(d) { return d.close; });
+            .yValue(function(d) { return d.close; })
+            .decorate(function(selection) {
+                selection.enter()
+                    .classed(unselectedAreaName, true)
+                    .style('fill', 'url(\'/#' + gradientName(unselectedAreaName) + '\')');
+            });
+
+        var areaHighlight = fc.series.area()
+            .yValue(function(d) { return d.close; })
+            .decorate(function(selection) {
+                selection.enter()
+                    .classed(hightlightAreaName, true);
+            });
+
         var line = fc.series.line()
             .yValue(function(d) { return d.close; });
         var brush = d3.svg.brush();
         var navMulti = fc.series.multi()
-            .series([area, line, brush])
+            .series([areaHighlight, area, line, brush])
             .decorate(function(selection) {
                 selection.enter()
                     .select('.e')
@@ -62,6 +106,9 @@
 
         function nav(selection) {
             var navbarContainer = selection.select('#navbar-container');
+            appendGradient(navbarContainer, unselectedAreaName);
+            appendGradient(navbarContainer, hightlightAreaName);
+
             var navbarReset = selection.select('#navbar-reset');
             var model = navbarContainer.datum();
 
