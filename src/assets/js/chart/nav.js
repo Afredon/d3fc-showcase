@@ -43,7 +43,7 @@
                 .attr('offset', '100%');
         }
 
-        var forcePathTop = function(path) {
+        function forcePathTop(path) {
             // ensure the top of the path is always the one of the container
             // to keep the gradient consistent when the user changes the selected period.
             var current = path.attr('d');
@@ -51,15 +51,15 @@
                 var augmented = 'M-1,0H1' + current;
                 path.attr('d', augmented);
             }
-        };
+        }
 
-        var decorateArea = function(className) {
+        function decorateArea(className) {
             return function(path) {
                 path.enter()
                     .classed(className, true);
                 forcePathTop(path);
             };
-        };
+        }
 
         var areaLeft = fc.series.area()
             .yValue(function(d) { return d.close; })
@@ -80,36 +80,19 @@
             .yValue(function(d) { return d.close; });
         var brush = d3.svg.brush();
 
-        var linearInterpolation = function(fromValue, fromA, fromB, toA, toB) {
+        function linearInterpolation(fromValue, fromA, fromB, toA, toB) {
             return toA + (toB - toA) * (fromValue - fromA) / (fromB - fromA);
-        };
+        }
 
-        var binarySearch = function(data, value, getLeftValue) {
-            // Variation on classic binary search with deferred equality
-            // we are not looking for the exact value but the closest value left or right
-            var iMin = 0;
-            var iMax = data.length - 1;
-            var iMid;
-            while (iMin + 1 < iMax) {
-                iMid = Math.floor((iMin + iMax) / 2);
-                if (data[iMid].date < value) {
-                    iMin = iMid;
-                } else {
-                    iMax = iMid;
-                }
-            }
-            // deferred equality
-            return getLeftValue ? iMin : iMax;
-        };
-
-        var findIntervalIndexes = function(data, selectedDates) {
-            // returns the indexes of the widest interval in data than is included in [left;right]
-            var leftHighlightIndex = binarySearch(data, selectedDates.left, false);
-            var rightHighlightIndex = binarySearch(data, selectedDates.right, true);
+        var bisectLeft = d3.bisector(function(d) {return d.date; }).left;
+        var bisectRight = d3.bisector(function(d) {return d.date; }).right;
+        function findIntervalIndexes(data, selectedDates) {
+            var leftHighlightIndex = bisectLeft(data, selectedDates.left);
+            var rightHighlightIndex = bisectRight(data, selectedDates.right, leftHighlightIndex) - 1;
             return {left: leftHighlightIndex, right: rightHighlightIndex};
-        };
+        }
 
-        var calcInterpolationPoint = function(date, left, right) {
+        function calcInterpolationPoint(date, left, right) {
             var interpolatedClose = linearInterpolation(
                 date,
                 left[left.length - 1].date,
@@ -117,9 +100,9 @@
                 left[left.length - 1].close,
                 right[0].close);
             return {date: date, close: interpolatedClose};
-        };
+        }
 
-        var addInterpolatedPoint = function(date, left, right) {
+        function addInterpolatedPoint(date, left, right) {
             // Value: where interpolation is needed
             // Left, Right: arrays around the point where the interpolation is needed
             // [left] date [right] => [Left; data(date)] [data(date); Right]
@@ -128,27 +111,27 @@
                 left.push(interpolatedData);
                 right.unshift(interpolatedData);
             }
-        };
+        }
 
-        var addInterpolatedPointsToEmptyMiddleSet = function(selectedDates, areaData) {
+        function addInterpolatedPointsToEmptyMiddleSet(selectedDates, areaData) {
             var interpolatedData = calcInterpolationPoint(selectedDates.left, areaData.left, areaData.right);
             areaData.left.push(interpolatedData);
             areaData.highlight.unshift(interpolatedData);
             interpolatedData = calcInterpolationPoint(selectedDates.right, areaData.left, areaData.right);
             areaData.highlight.push(interpolatedData);
             areaData.right.unshift(interpolatedData);
-        };
+        }
 
-        var addInterpolatedPoints = function(selectedDates, areaData) {
+        function addInterpolatedPoints(selectedDates, areaData) {
             if (areaData.highlight.length > 0) {
                 addInterpolatedPoint(selectedDates.left, areaData.left, areaData.highlight);
                 addInterpolatedPoint(selectedDates.right, areaData.highlight, areaData.right);
             } else {
                 addInterpolatedPointsToEmptyMiddleSet(selectedDates, areaData);
             }
-        };
+        }
 
-        var splitData = function(data) {
+        function splitData(data) {
             var output = {};
             var selectedDates = {};
             selectedDates.left =  viewScale.domain()[0];
@@ -163,7 +146,7 @@
             addInterpolatedPoints(selectedDates, output);
 
             return output;
-        };
+        }
 
         var navMulti = fc.series.multi().series([areaLeft, areaHighlight, areaRight, line, brush])
             .mapping(function(series) {
